@@ -1,0 +1,162 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Decision;
+use App\Services\DecisionService;
+use App\Services\StreamingService;
+use App\Jobs\ProcessDecision;
+use Illuminate\Support\Facades\Cache;
+
+class DecisionController extends Controller
+{
+    protected DecisionService $decisionService;
+    protected StreamingService $streamingService;
+
+    public function __construct(DecisionService $decisionService, StreamingService $streamingService)
+    {
+        $this->decisionService = $decisionService;
+        $this->streamingService = $streamingService;
+    }
+
+    /**
+     * GET /api/decisions — paginated list of user's decisions
+     */
+    public function index(Request $request)
+    {
+        $decisions = $request->user()
+            ->decisions()
+            ->with('output')
+            ->latest()
+            ->paginate(15);
+
+        return response()->json($decisions);
+    }
+
+    /**
+     * GET /api/decisions/{id} — single decision with output
+     */
+    public function show(Request $request, Decision $decision)
+    {
+        if ($decision->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $decision->load('output');
+        return response()->json($decision);
+    }
+
+    /**
+     * POST /api/decision — Create and process a decision via Groq AI
+     *
+     * Caches identical domain+query combinations per user (TTL: 1 hour).
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'domain' => 'nullable|string|in:career,tech,business,personal',
+            'query'  => 'required|string|min:10|max:5000',
+            'async'  => 'nullable|boolean',
+        ]);
+
+        $query = $this->sanitizeInput($validated['query']);
+        $domain = $validated['domain'] ?? $this->decisionService->classifyDomain($query);
+
+        // --- Redis Cache Check ---
+        $cacheKey = 'decision:' . $request->user()->id . ':' . md5($domain . '|' . $query);
+
+        if ($cached = Cache::get($cacheKey)) {
+            return response()->json([
+                'message' => 'Decision retrieved from cache',
+                'cached' => true,
+                'decision' => $cached,
+            ]);
+        }
+
+        // Create the decision record
+        $decision = $request->user()->decisions()->create([
+            'domain' => $domain,
+            'query'  => $query,
+            'status' => 'pending',
+        ]);
+
+        // --- Async Queue Mode ---
+        if ($request->boolean('async')) {
+            ProcessDecision::dispatch($decision);
+
+            return response()->json([
+                'message'     => 'Decision queued for processing.',
+                'decision_id' => $decision->id,
+                'status'      => 'pending',
+                'stream_url'  => url("/api/decisions/{$decision->id}/stream"),
+            ], 202);
+        }
+
+        // --- Synchronous Mode (default) ---
+        $output = $this->decisionService->processDecision($decision);
+
+        if (!$output) {
+            return response()->json([
+                'error'       => 'Failed to process decision.',
+                'decision_id' => $decision->id,
+                'status'      => $decision->fresh()->status,
+            ], 422);
+        }
+
+        $result = $decision->load('output');
+
+        // Store in Redis cache (1 hour TTL)
+        Cache::put($cacheKey, $result, now()->addHour());
+
+        return response()->json([
+            'message'  => 'Decision processed successfully',
+            'cached'   => false,
+            'decision' => $result,
+        ], 201);
+    }
+
+    /**
+     * POST /api/decisions/{id}/rerun — Re-run an existing decision
+     */
+    public function rerun(Request $request, Decision $decision)
+    {
+        if ($decision->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $output = $this->decisionService->reRunDecision($decision);
+
+        if (!$output) {
+            return response()->json(['error' => 'Failed to re-run decision'], 422);
+        }
+
+        return response()->json([
+            'message' => 'Decision re-run completed successfully',
+            'decision' => $decision->load('output')
+        ]);
+    }
+
+    /**
+     * GET /api/decisions/{id}/stream — SSE streaming endpoint.
+     */
+    public function stream(Request $request, Decision $decision)
+    {
+        if ($decision->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return $this->streamingService->streamDecisionResponse($decision);
+    }
+
+    /**
+     * Sanitize user input.
+     */
+    private function sanitizeInput(string $input): string
+    {
+        $input = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input);
+        $input = strip_tags($input);
+        $input = preg_replace('/\s{3,}/', ' ', $input);
+        return trim($input);
+    }
+}

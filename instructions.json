@@ -1,0 +1,154 @@
+{
+  "project_name": "sitara_ai_decision_engine_backend",
+  "framework": "Laravel 10",
+  "language": "PHP 8.2",
+  "database": "MySQL",
+  "authentication": "Laravel Sanctum",
+  "phases": [
+    {
+      "phase": "phase_1_foundation",
+      "tasks": [
+        "Initialize Laravel project",
+        "Configure MySQL connection",
+        "Setup Sanctum authentication",
+        "Create base folder structure (Controllers, Services, Repositories)"
+      ]
+    },
+    {
+      "phase": "phase_2_mvp",
+      "database_schema": [
+        "users",
+        "api_keys",
+        "decisions",
+        "decision_outputs",
+        "memory",
+        "audit_logs"
+      ],
+      "api_endpoints": [
+        "POST /auth/register",
+        "POST /auth/login",
+        "GET /user/profile",
+        "POST /api-key",
+        "PUT /api-key",
+        "GET /api-key",
+        "POST /decision",
+        "GET /decisions",
+        "GET /decisions/{id}"
+      ],
+      "core_modules": [
+        "AuthenticationController",
+        "APIKeyController",
+        "DecisionController",
+        "DecisionService",
+        "GroqService",
+        "StreamingService"
+      ]
+    },
+    {
+      "phase": "phase_3_feature_expansion",
+      "tasks": [
+        "Add decision re-run endpoint",
+        "Add domain classification service",
+        "Add memory retrieval system"
+      ]
+    },
+    {
+      "phase": "phase_4_security_hardening",
+      "tasks": [
+        "Encrypt API keys (AES-256)",
+        "Implement rate limiting",
+        "Validate all inputs",
+        "Prevent prompt injection"
+      ]
+    },
+    {
+      "phase": "phase_5_scalability_and_automation",
+      "tasks": [
+        "Integrate Redis caching",
+        "Setup queue workers for AI calls",
+        "Optimize DB queries with indexing"
+      ]
+    },
+    {
+      "phase": "phase_6_launch_and_monitoring",
+      "tasks": [
+        "Setup logging system",
+        "Add error tracking",
+        "Prepare production configs"
+      ]
+    }
+  ],
+  "database_details": {
+    "users": ["id", "name", "email", "password", "created_at"],
+    "api_keys": ["id", "user_id", "encrypted_key", "status"],
+    "decisions": ["id", "user_id", "query", "domain", "confidence_score"],
+    "decision_outputs": ["decision_id", "recommendation", "pros", "cons", "risks", "alternatives"]
+  },
+  "api_structure": {
+    "decision_execution": {
+      "flow": [
+        "Validate user",
+        "Fetch encrypted API key",
+        "Decrypt key",
+        "Construct prompt",
+        "Call Groq API",
+        "Stream response",
+        "Parse into structured JSON",
+        "Store in database",
+        "Return response"
+      ]
+    }
+  },
+  "streaming_strategy": {
+    "protocol": "SSE",
+    "flow": [
+      "Client request",
+      "Open stream",
+      "Forward Groq stream",
+      "Send chunks",
+      "Finalize structured response"
+    ]
+  },
+  "authentication_strategy": [
+    "Token-based auth using Sanctum",
+    "Protect all routes except auth",
+    "Attach user to every request"
+  ],
+  "security_enforcement": [
+    "Encrypt API keys",
+    "Never expose keys to frontend",
+    "Validate request payloads",
+    "Sanitize inputs"
+  ],
+  "validation_rules": [
+    "Decision input min 10 chars",
+    "API key must be valid before storing",
+    "AI output must match schema"
+  ],
+  "environment_variables": {
+    "APP_ENV": "production",
+    "APP_KEY": "",
+    "DB_CONNECTION": "mysql",
+    "DB_HOST": "",
+    "DB_DATABASE": "",
+    "DB_USERNAME": "",
+    "DB_PASSWORD": "",
+    "GROQ_API_BASE_URL": ""
+  },
+  "devops_strategy": [
+    "Use GitHub for version control",
+    "Branching: main, dev, feature/*",
+    "Deploy on VPS or cloud",
+    "Use CI/CD pipelines"
+  ],
+  "logging_and_observability": [
+    "Log all API calls",
+    "Track errors",
+    "Store audit logs"
+  ],
+  "frontend_integration": [
+    "Provide REST APIs",
+    "Provide SSE endpoint for streaming",
+    "Return structured JSON only"
+  ]
+}

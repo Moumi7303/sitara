@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 245 32% 15%;
+    --foreground: 4 52% 82%;
+
+    --card: 289 54% 20%;
+    --card-foreground: 4 52% 82%;
+
+    --popover: 289 54% 20%;
+    --popover-foreground: 4 52% 82%;
+
+    --primary: 348 44% 45%;
+    --primary-foreground: 4 52% 95%;
+
+    --secondary: 326 50% 27%;
+    --secondary-foreground: 4 52% 82%;
+
+    --muted: 326 50% 27%;
+    --muted-foreground: 4 52% 70%;
+
+    --accent: 28 80% 64%;
+    --accent-foreground: 245 32% 15%;
+
+    --destructive: 348 44% 45%;
+    --destructive-foreground: 4 52% 95%;
+
+    --border: 326 50% 27%;
+    --input: 326 50% 27%;
+    --ring: 28 80% 64%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 245 32% 15%;
+    --sidebar-foreground: 4 52% 82%;
+    --sidebar-primary: 348 44% 45%;
+    --sidebar-primary-foreground: 4 52% 95%;
+    --sidebar-accent: 326 50% 27%;
+    --sidebar-accent-foreground: 4 52% 82%;
+    --sidebar-border: 326 50% 27%;
+    --sidebar-ring: 28 80% 64%;
+
+    /* Custom Sitara tokens */
+    --surface: 245 32% 15%;
+    --surface-elevated: 289 54% 20%;
+    --teal-glow: 28 80% 64%;
+    --amber: 28 80% 64%;
+    --success: 152 60% 42%;
+    --warning: 28 80% 64%;
+    --danger: 348 44% 45%;
+
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 245 32% 15%;
+    --foreground: 4 52% 82%;
+
+    --card: 289 54% 20%;
+    --card-foreground: 4 52% 82%;
+
+    --popover: 289 54% 20%;
+    --popover-foreground: 4 52% 82%;
+
+    --primary: 348 44% 45%;
+    --primary-foreground: 4 52% 95%;
+
+    --secondary: 326 50% 27%;
+    --secondary-foreground: 4 52% 82%;
+
+    --muted: 326 50% 27%;
+    --muted-foreground: 4 52% 70%;
+
+    --accent: 28 80% 64%;
+    --accent-foreground: 245 32% 15%;
+
+    --destructive: 348 44% 45%;
+    --destructive-foreground: 4 52% 95%;
+
+    --border: 326 50% 27%;
+    --input: 326 50% 27%;
+    --ring: 28 80% 64%;
+
+    --sidebar-background: 245 32% 15%;
+    --sidebar-foreground: 4 52% 82%;
+    --sidebar-primary: 348 44% 45%;
+    --sidebar-primary-foreground: 4 52% 95%;
+    --sidebar-accent: 326 50% 27%;
+    --sidebar-accent-foreground: 4 52% 82%;
+    --sidebar-border: 326 50% 27%;
+    --sidebar-ring: 28 80% 64%;
+
+    --surface: 245 32% 15%;
+    --surface-elevated: 289 54% 20%;
+    --teal-glow: 28 80% 64%;
+    --amber: 28 80% 64%;
+    --success: 152 60% 42%;
+    --warning: 28 80% 64%;
+    --danger: 348 44% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    @apply tracking-tight;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(348 44% 45%), hsl(28 80% 64%));
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(28 80% 64%), hsl(4 52% 82%));
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(245 32% 15%), hsl(289 54% 20%), hsl(326 50% 27%));
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 30px -5px hsl(348 44% 45% / 0.5);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 30px -5px hsl(28 80% 64% / 0.5);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(28 80% 64%), hsl(4 52% 82%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
