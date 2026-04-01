@@ -14,7 +14,7 @@ class Memory extends Model
      */
     protected $table = 'memory';
 
-    protected $fillable = ['user_id', 'context'];
+    protected $fillable = ['user_id', 'type', 'content'];
 
     public function user()
     {

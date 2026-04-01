@@ -34,7 +34,7 @@ const Landing = () => {
         <div className="absolute inset-0 gradient-hero opacity-95" />
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" />
-          <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-amber/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="relative container py-32 md:py-44">
@@ -44,17 +44,17 @@ const Landing = () => {
             transition={{ duration: 0.7 }}
             className="max-w-3xl mx-auto text-center"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-primary/30 bg-primary/10 text-primary-foreground/80 text-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-[var(--border)]/20 bg-[var(--card)] text-[var(--text)] font-medium text-sm">
               <Sparkles className="h-3.5 w-3.5" />
               AI Decision Intelligence
             </div>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-primary-foreground mb-6 leading-[1.1]">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-[var(--text)] mb-6 leading-[1.1]">
               Make <span className="text-gradient">smarter</span> decisions,{' '}
               <span className="text-gradient">faster</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-primary-foreground/60 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-[var(--text)]/80 mb-10 max-w-2xl mx-auto leading-relaxed">
               Sitara analyzes complex decisions with multi-factor reasoning, risk assessment, and confidence scoring — delivering structured insights in seconds.
             </p>
 
@@ -65,7 +65,7 @@ const Landing = () => {
                 </Button>
               </Link>
               <Link to="/login">
-                <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 text-base">
+                <Button size="lg" variant="outline" className="border-[var(--border)] text-[var(--text)] hover:bg-[var(--card)] px-8 text-base">
                   Log In
                 </Button>
               </Link>
@@ -75,7 +75,7 @@ const Landing = () => {
       </section>
 
       {/* Features */}
-      <section className="py-24 bg-surface">
+      <section className="py-24 bg-[var(--bg)]">
         <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -97,7 +97,7 @@ const Landing = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-6 rounded-xl bg-card border border-border hover:border-primary/30 hover:glow-primary transition-all duration-300 group"
+                className="p-6 rounded-xl bg-[var(--card)] border border-border hover:border-primary/30 hover:glow-primary transition-all duration-300 group"
               >
                 <div className="h-12 w-12 rounded-lg gradient-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <feature.icon className="h-6 w-6 text-primary-foreground" />

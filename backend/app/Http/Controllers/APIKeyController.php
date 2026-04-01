@@ -9,6 +9,9 @@ use App\Services\EncryptionService;
 use App\Services\GroqService;
 use App\Services\CacheService;
 
+use App\Http\Requests\StoreApiKeyRequest;
+use Illuminate\Support\Facades\DB;
+
 class APIKeyController extends Controller
 {
     protected EncryptionService $encryption;
@@ -23,7 +26,7 @@ class APIKeyController extends Controller
     }
 
     /**
-     * GET /api/api-key — list user's API keys (id, provider, status only — never the key)
+     * GET /api/api-key — list user's API keys
      */
     public function index(Request $request)
     {
@@ -39,47 +42,55 @@ class APIKeyController extends Controller
     /**
      * POST /api/api-key — store a validated and encrypted API key
      */
-    public function store(Request $request)
+    public function store(StoreApiKeyRequest $request)
     {
-        $request->validate([
-            'key' => 'required|string|min:10|max:500',
-            'provider' => 'nullable|string|in:groq',
-        ]);
-
-        $plainKey = trim($request->key);
+        $validated = $request->validated();
+        $plainKey = trim($validated['api_key']);
+        $provider = $request->input('provider', 'groq');
 
         // Validate the key against Groq before storing
         if (!$this->groqService->validateApiKey($plainKey)) {
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'api_key_validation',
+                'status' => 'failure',
+                'metadata' => ['provider' => $provider, 'reason' => 'invalid_key']
+            ]);
+
             return response()->json([
                 'error' => 'The provided API key is invalid or could not be verified with Groq.',
             ], 422);
         }
 
-        // Deactivate any existing keys for this provider
-        $request->user()->apiKeys()
-            ->where('provider', $request->provider ?? 'groq')
-            ->update(['status' => false]);
+        return DB::transaction(function () use ($request, $plainKey, $provider) {
+            // Deactivate any existing keys for this provider (Strict Branding Rule)
+            $request->user()->apiKeys()
+                ->where('provider', $provider)
+                ->update(['status' => false]);
 
-        $encryptedKey = $this->encryption->encryptKey($plainKey);
+            $encryptedKey = $this->encryption->encryptKey($plainKey);
 
-        $apiKey = $request->user()->apiKeys()->create([
-            'provider' => $request->provider ?? 'groq',
-            'encrypted_key' => $encryptedKey,
-            'status' => true,
-        ]);
+            $status = ($request->input('status') === 'inactive') ? false : true;
 
-        // Audit log
-        AuditLog::create([
-            'user_id' => $request->user()->id,
-            'action' => 'api_key_added',
-            'details' => ['provider' => $apiKey->provider, 'api_key_id' => $apiKey->id],
-        ]);
+            $apiKey = $request->user()->apiKeys()->create([
+                'provider' => $provider,
+                'encrypted_key' => $encryptedKey,
+                'status' => $status,
+            ]);
 
-        return response()->json([
-            'message' => 'API key validated and stored securely.',
-            'id' => $apiKey->id,
-            'provider' => $apiKey->provider,
-        ], 201);
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'api_key_added',
+                'status' => 'success',
+                'metadata' => ['provider' => $apiKey->provider, 'api_key_id' => $apiKey->id]
+            ]);
+
+            return response()->json([
+                'message' => 'API key validated and stored securely.',
+                'id' => $apiKey->id,
+                'provider' => $apiKey->provider,
+            ], 201);
+        });
     }
 
     /**
@@ -91,11 +102,18 @@ class APIKeyController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|boolean',
         ]);
 
-        $apiKey->update(['status' => $request->status]);
+        $apiKey->update(['status' => $validated['status']]);
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'api_key_toggle',
+            'status' => 'success',
+            'metadata' => ['api_key_id' => $apiKey->id, 'new_status' => $validated['status']]
+        ]);
 
         return response()->json(['message' => 'API key updated.', 'status' => $apiKey->status]);
     }
@@ -111,13 +129,14 @@ class APIKeyController extends Controller
 
         $apiKey->delete();
 
-        // Flush any cached decisions — a key change may affect AI results
+        // Flush cached decisions — key changes affect AI logic
         $this->cache->invalidateUser($request->user()->id);
 
         AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'api_key_deleted',
-            'details' => ['provider' => $apiKey->provider],
+            'status' => 'success',
+            'metadata' => ['provider' => $apiKey->provider]
         ]);
 
         return response()->json(['message' => 'API key deleted.'], 200);

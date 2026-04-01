@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
-import { Brain, History, Settings, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Brain, History, Settings, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navLinks = [
@@ -15,9 +15,27 @@ const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'));
+  }, []);
+
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDark(true);
+    }
+  };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl transition-colors duration-300">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
@@ -26,56 +44,60 @@ const Navbar = () => {
           <span className="text-xl font-bold tracking-tight">Sitara</span>
         </Link>
 
-        {isAuthenticated && (
-          <>
-            <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.to;
-                return (
-                  <Link key={link.to} to={link.to}>
-                    <Button
-                      variant={isActive ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="gap-2"
-                    >
-                      <link.icon className="h-4 w-4" />
-                      {link.label}
-                    </Button>
-                  </Link>
-                );
-              })}
-            </div>
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="sm" onClick={toggleTheme} className="h-9 w-9 px-0">
+            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
 
-            <div className="hidden md:flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">{user?.name}</span>
-              <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
-                <LogOut className="h-4 w-4" />
+          {isAuthenticated ? (
+            <>
+              <div className="hidden md:flex items-center gap-1">
+                {navLinks.map((link) => {
+                  const isActive = location.pathname === link.to;
+                  return (
+                    <Link key={link.to} to={link.to}>
+                      <Button
+                        variant={isActive ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <link.icon className="h-4 w-4" />
+                        {link.label}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">{user?.name}</span>
+                <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:hidden h-9 w-9 px-0"
+                onClick={() => setMobileOpen(!mobileOpen)}
+              >
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Log in</Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm" className="gradient-primary text-primary-foreground">
+                  Get Started
+                </Button>
+              </Link>
             </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </>
-        )}
-
-        {!isAuthenticated && (
-          <div className="flex items-center gap-2">
-            <Link to="/login">
-              <Button variant="ghost" size="sm">Log in</Button>
-            </Link>
-            <Link to="/register">
-              <Button size="sm" className="gradient-primary text-primary-foreground">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -84,7 +106,7 @@ const Navbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-border md:hidden overflow-hidden"
+            className="border-t border-border md:hidden overflow-hidden bg-card transition-colors duration-300"
           >
             <div className="container py-3 flex flex-col gap-1">
               {navLinks.map((link) => (

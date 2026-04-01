@@ -10,9 +10,9 @@ interface Factor {
 }
 
 const impactColor = {
-  positive: 'hsl(152, 60%, 42%)',
-  negative: 'hsl(0, 72%, 51%)',
-  neutral: 'hsl(220, 10%, 46%)',
+  positive: 'var(--chart-positive)',
+  negative: 'var(--chart-negative)',
+  neutral: 'var(--chart-neutral)',
 };
 
 const FactorsChart = ({ factors }: { factors: Factor[] }) => {
@@ -30,9 +30,9 @@ const FactorsChart = ({ factors }: { factors: Factor[] }) => {
         <CardContent>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 88%)" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.2} />
+              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12, fill: 'var(--text)' }} />
+              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: 'var(--text)' }} />
               <Bar dataKey="weight" radius={[0, 4, 4, 0]}>
                 {data.map((entry, i) => (
                   <Cell key={i} fill={impactColor[entry.impact]} />

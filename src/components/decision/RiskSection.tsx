@@ -9,9 +9,9 @@ interface Risk {
 }
 
 const levelStyles = {
-  low: 'bg-success/10 text-success border-success/20',
-  medium: 'bg-amber/10 text-amber border-amber/20',
-  high: 'bg-danger/10 text-danger border-danger/20',
+  low: 'bg-[var(--card)] text-[var(--text)] border-[var(--border)]/30',
+  medium: 'bg-[var(--accent)] text-[var(--bg)] border-[var(--border)]/50',
+  high: 'bg-[var(--text)] text-[var(--bg)] border-[var(--border)]',
 };
 
 const RiskSection = ({ risks }: { risks: Risk[] }) => (

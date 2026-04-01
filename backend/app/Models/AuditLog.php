@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditLog extends Model
 {
-    protected $fillable = ['user_id', 'action', 'details'];
+    protected $fillable = ['user_id', 'action', 'status', 'metadata'];
 
     protected $casts = [
-        'details' => 'array',
+        'metadata' => 'array',
     ];
 
     public function user()

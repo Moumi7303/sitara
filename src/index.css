@@ -6,102 +6,28 @@
 
 @layer base {
   :root {
-    --background: 245 32% 15%;
-    --foreground: 4 52% 82%;
-
-    --card: 289 54% 20%;
-    --card-foreground: 4 52% 82%;
-
-    --popover: 289 54% 20%;
-    --popover-foreground: 4 52% 82%;
-
-    --primary: 348 44% 45%;
-    --primary-foreground: 4 52% 95%;
-
-    --secondary: 326 50% 27%;
-    --secondary-foreground: 4 52% 82%;
-
-    --muted: 326 50% 27%;
-    --muted-foreground: 4 52% 70%;
-
-    --accent: 28 80% 64%;
-    --accent-foreground: 245 32% 15%;
-
-    --destructive: 348 44% 45%;
-    --destructive-foreground: 4 52% 95%;
-
-    --border: 326 50% 27%;
-    --input: 326 50% 27%;
-    --ring: 28 80% 64%;
-
+    --bg: #FFFFFF;
+    --text: #111111;
+    --card: #FFDE69;
+    --accent: #FFC700;
+    --accent-foreground: #111111;
+    --border: #111111;
+    --chart-positive: #FFC700;
+    --chart-negative: #111111;
+    --chart-neutral: #FFDE69;
     --radius: 0.75rem;
-
-    --sidebar-background: 245 32% 15%;
-    --sidebar-foreground: 4 52% 82%;
-    --sidebar-primary: 348 44% 45%;
-    --sidebar-primary-foreground: 4 52% 95%;
-    --sidebar-accent: 326 50% 27%;
-    --sidebar-accent-foreground: 4 52% 82%;
-    --sidebar-border: 326 50% 27%;
-    --sidebar-ring: 28 80% 64%;
-
-    /* Custom Sitara tokens */
-    --surface: 245 32% 15%;
-    --surface-elevated: 289 54% 20%;
-    --teal-glow: 28 80% 64%;
-    --amber: 28 80% 64%;
-    --success: 152 60% 42%;
-    --warning: 28 80% 64%;
-    --danger: 348 44% 45%;
-
-    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 245 32% 15%;
-    --foreground: 4 52% 82%;
-
-    --card: 289 54% 20%;
-    --card-foreground: 4 52% 82%;
-
-    --popover: 289 54% 20%;
-    --popover-foreground: 4 52% 82%;
-
-    --primary: 348 44% 45%;
-    --primary-foreground: 4 52% 95%;
-
-    --secondary: 326 50% 27%;
-    --secondary-foreground: 4 52% 82%;
-
-    --muted: 326 50% 27%;
-    --muted-foreground: 4 52% 70%;
-
-    --accent: 28 80% 64%;
-    --accent-foreground: 245 32% 15%;
-
-    --destructive: 348 44% 45%;
-    --destructive-foreground: 4 52% 95%;
-
-    --border: 326 50% 27%;
-    --input: 326 50% 27%;
-    --ring: 28 80% 64%;
-
-    --sidebar-background: 245 32% 15%;
-    --sidebar-foreground: 4 52% 82%;
-    --sidebar-primary: 348 44% 45%;
-    --sidebar-primary-foreground: 4 52% 95%;
-    --sidebar-accent: 326 50% 27%;
-    --sidebar-accent-foreground: 4 52% 82%;
-    --sidebar-border: 326 50% 27%;
-    --sidebar-ring: 28 80% 64%;
-
-    --surface: 245 32% 15%;
-    --surface-elevated: 289 54% 20%;
-    --teal-glow: 28 80% 64%;
-    --amber: 28 80% 64%;
-    --success: 152 60% 42%;
-    --warning: 28 80% 64%;
-    --danger: 348 44% 45%;
+    --bg: #111111;
+    --text: #FFFFFF;
+    --card: #1a1a1a;
+    --accent: #FFC700;
+    --accent-foreground: #111111;
+    --border: #FFFFFF;
+    --chart-positive: #FFC700;
+    --chart-negative: #FFFFFF;
+    --chart-neutral: #1a1a1a;
   }
 }
 
@@ -111,7 +37,10 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply antialiased;
+    background-color: var(--bg);
+    color: var(--text);
+    transition: background-color 0.3s ease, color 0.3s ease;
     font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 
@@ -127,27 +56,27 @@
 
 @layer utilities {
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(348 44% 45%), hsl(28 80% 64%));
+    background: linear-gradient(135deg, var(--accent), var(--card));
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(28 80% 64%), hsl(4 52% 82%));
+    background: linear-gradient(135deg, var(--card), var(--bg));
   }
 
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(245 32% 15%), hsl(289 54% 20%), hsl(326 50% 27%));
+    background: linear-gradient(135deg, var(--bg), var(--card), var(--accent));
   }
 
   .glow-primary {
-    box-shadow: 0 0 30px -5px hsl(348 44% 45% / 0.5);
+    box-shadow: 0 0 30px -5px var(--accent);
   }
 
   .glow-accent {
-    box-shadow: 0 0 30px -5px hsl(28 80% 64% / 0.5);
+    box-shadow: 0 0 30px -5px var(--card);
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(28 80% 64%), hsl(4 52% 82%));
+    background: linear-gradient(135deg, var(--accent), var(--text));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

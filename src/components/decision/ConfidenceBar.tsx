@@ -6,7 +6,7 @@ interface ConfidenceBarProps {
 }
 
 const ConfidenceBar = ({ score, label }: ConfidenceBarProps) => {
-  const color = score >= 75 ? 'bg-success' : score >= 50 ? 'bg-amber' : 'bg-danger';
+  const color = score >= 75 ? 'bg-[var(--accent)]' : score >= 50 ? 'bg-[var(--card)]' : 'bg-[var(--text)]';
 
   return (
     <div className="space-y-1.5">

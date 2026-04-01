@@ -9,6 +9,10 @@ use App\Services\StreamingService;
 use App\Jobs\ProcessDecision;
 use Illuminate\Support\Facades\Cache;
 
+use App\Http\Requests\StoreDecisionRequest;
+use App\Models\AuditLog;
+use Illuminate\Support\Facades\DB;
+
 class DecisionController extends Controller
 {
     protected DecisionService $decisionService;
@@ -49,17 +53,10 @@ class DecisionController extends Controller
 
     /**
      * POST /api/decision — Create and process a decision via Groq AI
-     *
-     * Caches identical domain+query combinations per user (TTL: 1 hour).
      */
-    public function store(Request $request)
+    public function store(StoreDecisionRequest $request)
     {
-        $validated = $request->validate([
-            'domain' => 'nullable|string|in:career,tech,business,personal',
-            'query'  => 'required|string|min:10|max:5000',
-            'async'  => 'nullable|boolean',
-        ]);
-
+        $validated = $request->validated();
         $query = $this->sanitizeInput($validated['query']);
         $domain = $validated['domain'] ?? $this->decisionService->classifyDomain($query);
 
@@ -67,6 +64,13 @@ class DecisionController extends Controller
         $cacheKey = 'decision:' . $request->user()->id . ':' . md5($domain . '|' . $query);
 
         if ($cached = Cache::get($cacheKey)) {
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'decision_retrieval',
+                'status' => 'success',
+                'metadata' => ['source' => 'cache', 'domain' => $domain]
+            ]);
+
             return response()->json([
                 'message' => 'Decision retrieved from cache',
                 'cached' => true,
@@ -74,46 +78,72 @@ class DecisionController extends Controller
             ]);
         }
 
-        // Create the decision record
-        $decision = $request->user()->decisions()->create([
-            'domain' => $domain,
-            'query'  => $query,
-            'status' => 'pending',
-        ]);
+        // --- Persistent Storage (Transaction) ---
+        return DB::transaction(function () use ($request, $query, $domain, $cacheKey) {
+            $decision = $request->user()->decisions()->create([
+                'domain' => $domain,
+                'query'  => $query,
+                'status' => 'pending',
+            ]);
 
-        // --- Async Queue Mode ---
-        if ($request->boolean('async')) {
-            ProcessDecision::dispatch($decision);
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'decision_creation',
+                'status' => 'success',
+                'metadata' => ['decision_id' => $decision->id, 'domain' => $domain]
+            ]);
 
-            return response()->json([
-                'message'     => 'Decision queued for processing.',
-                'decision_id' => $decision->id,
-                'status'      => 'pending',
-                'stream_url'  => url("/api/decisions/{$decision->id}/stream"),
-            ], 202);
-        }
+            // --- Async Queue Mode ---
+            if ($request->boolean('async')) {
+                ProcessDecision::dispatch($decision);
 
-        // --- Synchronous Mode (default) ---
-        $output = $this->decisionService->processDecision($decision);
+                return response()->json([
+                    'message'     => 'Decision queued for processing.',
+                    'decision_id' => $decision->id,
+                    'status'      => 'pending',
+                    'stream_url'  => url("/api/decisions/{$decision->id}/stream"),
+                ], 202);
+            }
 
-        if (!$output) {
-            return response()->json([
-                'error'       => 'Failed to process decision.',
-                'decision_id' => $decision->id,
-                'status'      => $decision->fresh()->status,
-            ], 422);
-        }
+            // --- Synchronous Mode ---
+            try {
+                $output = $this->decisionService->processDecision($decision);
 
-        $result = $decision->load('output');
+                if (!$output) {
+                    throw new \Exception('Processing failed');
+                }
 
-        // Store in Redis cache (1 hour TTL)
-        Cache::put($cacheKey, $result, now()->addHour());
+                $result = $decision->load('output');
+                Cache::put($cacheKey, $result, now()->addHour());
 
-        return response()->json([
-            'message'  => 'Decision processed successfully',
-            'cached'   => false,
-            'decision' => $result,
-        ], 201);
+                AuditLog::create([
+                    'user_id' => $request->user()->id,
+                    'action' => 'decision_processing',
+                    'status' => 'success',
+                    'metadata' => ['decision_id' => $decision->id]
+                ]);
+
+                return response()->json([
+                    'message'  => 'Decision processed successfully',
+                    'cached'   => false,
+                    'decision' => $result,
+                ], 201);
+
+            } catch (\Exception $e) {
+                AuditLog::create([
+                    'user_id' => $request->user()->id,
+                    'action' => 'decision_processing',
+                    'status' => 'failure',
+                    'metadata' => ['decision_id' => $decision->id, 'error' => $e->getMessage()]
+                ]);
+
+                return response()->json([
+                    'error'       => 'Failed to process decision.',
+                    'decision_id' => $decision->id,
+                    'status'      => 'failed',
+                ], 422);
+            }
+        });
     }
 
     /**

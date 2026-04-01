@@ -73,7 +73,7 @@ const DecisionInput = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-[var(--card)] p-4 space-y-3">
         <Textarea
           placeholder="Describe your decision... e.g., 'Should I expand my SaaS product to the European market?'"
           value={query}

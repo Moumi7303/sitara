@@ -1,154 +1,143 @@
 {
-  "project_name": "sitara_ai_decision_engine_backend",
-  "framework": "Laravel 10",
-  "language": "PHP 8.2",
-  "database": "MySQL",
-  "authentication": "Laravel Sanctum",
-  "phases": [
-    {
-      "phase": "phase_1_foundation",
-      "tasks": [
-        "Initialize Laravel project",
-        "Configure MySQL connection",
-        "Setup Sanctum authentication",
-        "Create base folder structure (Controllers, Services, Repositories)"
+  "task": "enforce_database_storage_integrity",
+  "project": "sitara_ai_decision_engine_backend",
+  "objective": "Ensure all user data and system data are stored in correct database tables with proper validation, relationships, and consistency",
+  "strict_rules": [
+    "ALL incoming data must be validated before storage",
+    "NO data should be processed without storing it first",
+    "EVERY feature must persist data in database",
+    "USE Eloquent models only (no raw queries unless necessary)",
+    "ENSURE foreign key relationships are enforced"
+  ],
+  "tables": {
+    "users": {
+      "fields": ["id", "name", "email", "password", "created_at"],
+      "rules": [
+        "Email must be unique",
+        "Password must be hashed using bcrypt",
+        "User must be created on registration"
       ]
     },
-    {
-      "phase": "phase_2_mvp",
-      "database_schema": [
-        "users",
-        "api_keys",
-        "decisions",
-        "decision_outputs",
-        "memory",
-        "audit_logs"
+    "api_keys": {
+      "fields": ["id", "user_id", "encrypted_key", "status"],
+      "rules": [
+        "API key must be encrypted before saving",
+        "Each key must belong to a user",
+        "Only one active key per user"
+      ]
+    },
+    "decisions": {
+      "fields": ["id", "user_id", "query", "domain", "confidence_score"],
+      "rules": [
+        "Store user query before processing",
+        "Store domain classification result",
+        "Store confidence score after AI response"
+      ]
+    },
+    "decision_outputs": {
+      "fields": [
+        "decision_id",
+        "recommendation",
+        "pros",
+        "cons",
+        "risks",
+        "alternatives"
       ],
-      "api_endpoints": [
-        "POST /auth/register",
-        "POST /auth/login",
-        "GET /user/profile",
-        "POST /api-key",
-        "PUT /api-key",
-        "GET /api-key",
-        "POST /decision",
-        "GET /decisions",
-        "GET /decisions/{id}"
-      ],
-      "core_modules": [
-        "AuthenticationController",
-        "APIKeyController",
-        "DecisionController",
-        "DecisionService",
-        "GroqService",
-        "StreamingService"
+      "rules": [
+        "Must be linked to decisions table",
+        "Store structured AI output as JSON",
+        "Ensure all fields exist before saving"
       ]
     },
-    {
-      "phase": "phase_3_feature_expansion",
-      "tasks": [
-        "Add decision re-run endpoint",
-        "Add domain classification service",
-        "Add memory retrieval system"
+    "memory": {
+      "fields": ["id", "user_id", "type", "content"],
+      "rules": [
+        "Store user preferences and context",
+        "Link to user_id",
+        "Allow future embedding support"
       ]
     },
-    {
-      "phase": "phase_4_security_hardening",
-      "tasks": [
-        "Encrypt API keys (AES-256)",
-        "Implement rate limiting",
-        "Validate all inputs",
-        "Prevent prompt injection"
-      ]
-    },
-    {
-      "phase": "phase_5_scalability_and_automation",
-      "tasks": [
-        "Integrate Redis caching",
-        "Setup queue workers for AI calls",
-        "Optimize DB queries with indexing"
-      ]
-    },
-    {
-      "phase": "phase_6_launch_and_monitoring",
-      "tasks": [
-        "Setup logging system",
-        "Add error tracking",
-        "Prepare production configs"
+    "audit_logs": {
+      "fields": ["id", "user_id", "action", "status", "metadata"],
+      "rules": [
+        "Log every important action",
+        "Store success or failure",
+        "Capture metadata (API calls, errors)"
       ]
     }
-  ],
-  "database_details": {
-    "users": ["id", "name", "email", "password", "created_at"],
-    "api_keys": ["id", "user_id", "encrypted_key", "status"],
-    "decisions": ["id", "user_id", "query", "domain", "confidence_score"],
-    "decision_outputs": ["decision_id", "recommendation", "pros", "cons", "risks", "alternatives"]
   },
-  "api_structure": {
-    "decision_execution": {
+  "steps": [
+    {
+      "step": "validation_layer",
+      "actions": [
+        "Create Form Request validation classes",
+        "Validate all inputs before processing",
+        "Reject invalid requests"
+      ]
+    },
+    {
+      "step": "model_relationships",
+      "actions": [
+        "User hasMany Decisions",
+        "Decision belongsTo User",
+        "Decision hasOne DecisionOutput",
+        "User hasOne APIKey",
+        "User hasMany Memory"
+      ]
+    },
+    {
+      "step": "controller_logic",
+      "actions": [
+        "Store request data immediately after validation",
+        "Use transactions for critical operations",
+        "Rollback on failure"
+      ]
+    },
+    {
+      "step": "decision_flow_storage",
       "flow": [
-        "Validate user",
-        "Fetch encrypted API key",
-        "Decrypt key",
-        "Construct prompt",
-        "Call Groq API",
-        "Stream response",
-        "Parse into structured JSON",
-        "Store in database",
-        "Return response"
+        "Validate user input",
+        "Insert into decisions table",
+        "Call AI API",
+        "Parse response",
+        "Insert into decision_outputs",
+        "Update decisions with confidence_score"
+      ]
+    },
+    {
+      "step": "api_key_storage",
+      "flow": [
+        "Validate API key",
+        "Encrypt API key",
+        "Store in api_keys table",
+        "Mark as active"
+      ]
+    },
+    {
+      "step": "logging",
+      "actions": [
+        "Log every API request",
+        "Log failures and errors",
+        "Store logs in audit_logs table"
       ]
     }
-  },
-  "streaming_strategy": {
-    "protocol": "SSE",
-    "flow": [
-      "Client request",
-      "Open stream",
-      "Forward Groq stream",
-      "Send chunks",
-      "Finalize structured response"
-    ]
-  },
-  "authentication_strategy": [
-    "Token-based auth using Sanctum",
-    "Protect all routes except auth",
-    "Attach user to every request"
   ],
-  "security_enforcement": [
-    "Encrypt API keys",
-    "Never expose keys to frontend",
-    "Validate request payloads",
-    "Sanitize inputs"
+  "constraints": [
+    "NO data loss allowed",
+    "NO direct API response without saving",
+    "NO storing plaintext API keys",
+    "NO orphan records (must have relationships)",
+    "ALL tables must use timestamps"
   ],
-  "validation_rules": [
-    "Decision input min 10 chars",
-    "API key must be valid before storing",
-    "AI output must match schema"
+  "debug_checks": [
+    "Check if user is stored after registration",
+    "Check if API key is encrypted in DB",
+    "Check if decisions are saved before AI call",
+    "Check if decision_outputs linked correctly",
+    "Check audit_logs are recording actions"
   ],
-  "environment_variables": {
-    "APP_ENV": "production",
-    "APP_KEY": "",
-    "DB_CONNECTION": "mysql",
-    "DB_HOST": "",
-    "DB_DATABASE": "",
-    "DB_USERNAME": "",
-    "DB_PASSWORD": "",
-    "GROQ_API_BASE_URL": ""
-  },
-  "devops_strategy": [
-    "Use GitHub for version control",
-    "Branching: main, dev, feature/*",
-    "Deploy on VPS or cloud",
-    "Use CI/CD pipelines"
-  ],
-  "logging_and_observability": [
-    "Log all API calls",
-    "Track errors",
-    "Store audit logs"
-  ],
-  "frontend_integration": [
-    "Provide REST APIs",
-    "Provide SSE endpoint for streaming",
-    "Return structured JSON only"
-  ]
+  "output": {
+    "result": "Fully structured and consistent database system",
+    "quality": "production-grade data integrity"
+  }
 }
