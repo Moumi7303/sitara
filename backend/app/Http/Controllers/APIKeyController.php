@@ -44,6 +44,7 @@ class APIKeyController extends Controller
      */
     public function store(StoreApiKeyRequest $request)
     {
+        \Log::info('Incoming Request to /api/api-key', $request->all());
         $validated = $request->validated();
         $plainKey = trim($validated['api_key']);
         $provider = $request->input('provider', 'groq');
@@ -72,11 +73,17 @@ class APIKeyController extends Controller
 
             $status = ($request->input('status') === 'inactive') ? false : true;
 
-            $apiKey = $request->user()->apiKeys()->create([
-                'provider' => $provider,
-                'encrypted_key' => $encryptedKey,
-                'status' => $status,
-            ]);
+            try {
+                $apiKey = $request->user()->apiKeys()->create([
+                    'provider' => $provider,
+                    'encrypted_key' => $encryptedKey,
+                    'status' => $status,
+                ]);
+                \Log::info('Database insert success: ApiKey created', ['api_key_id' => $apiKey->id]);
+            } catch (\Exception $e) {
+                \Log::error('Database insert failure: ApiKey failed', ['error' => $e->getMessage()]);
+                throw $e;
+            }
 
             AuditLog::create([
                 'user_id' => $request->user()->id,

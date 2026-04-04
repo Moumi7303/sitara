@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ApiKey extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['user_id', 'provider', 'encrypted_key', 'status', 'last_used_at'];
     
     protected $hidden = ['encrypted_key'];

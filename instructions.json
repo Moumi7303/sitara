@@ -1,143 +1,148 @@
 {
-  "task": "enforce_database_storage_integrity",
+  "task": "create_tinker_diagnostic_and_autofix_script",
   "project": "sitara_ai_decision_engine_backend",
-  "objective": "Ensure all user data and system data are stored in correct database tables with proper validation, relationships, and consistency",
-  "strict_rules": [
-    "ALL incoming data must be validated before storage",
-    "NO data should be processed without storing it first",
-    "EVERY feature must persist data in database",
-    "USE Eloquent models only (no raw queries unless necessary)",
-    "ENSURE foreign key relationships are enforced"
+  "objective": "Create a Laravel Tinker-compatible script that tests the entire system (database, models, relationships, API flow) and attempts safe fixes for detected issues",
+  "strict_mode": true,
+  "rules": [
+    "DO NOT modify core business logic files",
+    "ONLY fix safe and recoverable issues",
+    "LOG all errors and fixes",
+    "DO NOT delete user data",
+    "RUN all checks sequentially"
   ],
-  "tables": {
-    "users": {
-      "fields": ["id", "name", "email", "password", "created_at"],
-      "rules": [
-        "Email must be unique",
-        "Password must be hashed using bcrypt",
-        "User must be created on registration"
-      ]
-    },
-    "api_keys": {
-      "fields": ["id", "user_id", "encrypted_key", "status"],
-      "rules": [
-        "API key must be encrypted before saving",
-        "Each key must belong to a user",
-        "Only one active key per user"
-      ]
-    },
-    "decisions": {
-      "fields": ["id", "user_id", "query", "domain", "confidence_score"],
-      "rules": [
-        "Store user query before processing",
-        "Store domain classification result",
-        "Store confidence score after AI response"
-      ]
-    },
-    "decision_outputs": {
-      "fields": [
-        "decision_id",
-        "recommendation",
-        "pros",
-        "cons",
-        "risks",
-        "alternatives"
-      ],
-      "rules": [
-        "Must be linked to decisions table",
-        "Store structured AI output as JSON",
-        "Ensure all fields exist before saving"
-      ]
-    },
-    "memory": {
-      "fields": ["id", "user_id", "type", "content"],
-      "rules": [
-        "Store user preferences and context",
-        "Link to user_id",
-        "Allow future embedding support"
-      ]
-    },
-    "audit_logs": {
-      "fields": ["id", "user_id", "action", "status", "metadata"],
-      "rules": [
-        "Log every important action",
-        "Store success or failure",
-        "Capture metadata (API calls, errors)"
-      ]
-    }
+  "file_creation": {
+    "file_name": "tinker_test.php",
+    "location": "project_root",
+    "execution": "php artisan tinker < tinker_test.php"
   },
-  "steps": [
+  "checks": [
     {
-      "step": "validation_layer",
+      "check": "database_connection",
       "actions": [
-        "Create Form Request validation classes",
-        "Validate all inputs before processing",
-        "Reject invalid requests"
+        "Test DB connection",
+        "If failed → log error and stop execution"
       ]
     },
     {
-      "step": "model_relationships",
+      "check": "tables_exist",
+      "tables": [
+        "users",
+        "api_keys",
+        "decisions",
+        "decision_outputs",
+        "memory",
+        "audit_logs"
+      ],
       "actions": [
-        "User hasMany Decisions",
-        "Decision belongsTo User",
-        "Decision hasOne DecisionOutput",
-        "User hasOne APIKey",
-        "User hasMany Memory"
+        "Check if each table exists",
+        "If missing → run migration automatically"
       ]
     },
     {
-      "step": "controller_logic",
+      "check": "model_integrity",
       "actions": [
-        "Store request data immediately after validation",
-        "Use transactions for critical operations",
-        "Rollback on failure"
+        "Check User model works",
+        "Check Decision model works",
+        "Check relationships",
+        "If broken → log error"
       ]
     },
     {
-      "step": "decision_flow_storage",
-      "flow": [
-        "Validate user input",
-        "Insert into decisions table",
-        "Call AI API",
-        "Parse response",
-        "Insert into decision_outputs",
-        "Update decisions with confidence_score"
-      ]
-    },
-    {
-      "step": "api_key_storage",
-      "flow": [
-        "Validate API key",
-        "Encrypt API key",
-        "Store in api_keys table",
-        "Mark as active"
-      ]
-    },
-    {
-      "step": "logging",
+      "check": "data_presence",
       "actions": [
-        "Log every API request",
-        "Log failures and errors",
-        "Store logs in audit_logs table"
+        "Count records in each table",
+        "If empty → run seeders"
+      ]
+    },
+    {
+      "check": "api_key_security",
+      "actions": [
+        "Check if API keys are encrypted",
+        "If plaintext found → encrypt immediately"
+      ]
+    },
+    {
+      "check": "decision_flow",
+      "actions": [
+        "Create test decision",
+        "Simulate AI response",
+        "Store in decision_outputs",
+        "Verify linkage"
+      ]
+    },
+    {
+      "check": "logging_system",
+      "actions": [
+        "Insert test audit log",
+        "Verify log saved",
+        "If failed → log issue"
       ]
     }
+  ],
+  "auto_fix_rules": [
+    {
+      "issue": "missing_tables",
+      "fix": "run php artisan migrate"
+    },
+    {
+      "issue": "empty_database",
+      "fix": "run php artisan db:seed"
+    },
+    {
+      "issue": "plaintext_api_keys",
+      "fix": "encrypt using Laravel Crypt"
+    },
+    {
+      "issue": "missing_relationship_data",
+      "fix": "create default linked records"
+    }
+  ],
+  "expected_script_structure": [
+    "echo 'Starting Sitara Diagnostic...';",
+    "try {",
+    "  DB::connection()->getPdo();",
+    "  echo 'Database connected';",
+    "} catch (Exception $e) {",
+    "  echo 'DB Error';",
+    "  return;",
+    "}",
+    "",
+    "// Check tables",
+    "if (!Schema::hasTable('users')) {",
+    "  echo 'Users table missing, migrating...';",
+    "  Artisan::call('migrate');",
+    "}",
+    "",
+    "// Check data",
+    "if (User::count() === 0) {",
+    "  echo 'No users found, seeding...';",
+    "  Artisan::call('db:seed');",
+    "}",
+    "",
+    "// Test insert",
+    "$user = User::first();",
+    "$decision = Decision::create([",
+    "  'user_id' => $user->id,",
+    "  'query' => 'Test decision',",
+    "  'domain' => 'test',",
+    "  'confidence_score' => 0",
+    "]);",
+    "",
+    "echo 'Decision test created';"
+  ],
+  "execution_steps": [
+    "Create tinker_test.php in root",
+    "Run: php artisan tinker < tinker_test.php",
+    "Observe console output"
   ],
   "constraints": [
-    "NO data loss allowed",
-    "NO direct API response without saving",
-    "NO storing plaintext API keys",
-    "NO orphan records (must have relationships)",
-    "ALL tables must use timestamps"
-  ],
-  "debug_checks": [
-    "Check if user is stored after registration",
-    "Check if API key is encrypted in DB",
-    "Check if decisions are saved before AI call",
-    "Check if decision_outputs linked correctly",
-    "Check audit_logs are recording actions"
+    "Do not overwrite existing user data",
+    "Do not delete records",
+    "Only safe fixes allowed",
+    "Script must not crash entire system"
   ],
   "output": {
-    "result": "Fully structured and consistent database system",
-    "quality": "production-grade data integrity"
+    "result": "Full system diagnostic with auto-repair",
+    "coverage": "database, models, relationships, basic flow"
   }
 }

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DecisionOutput extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'decision_id', 'recommendation',
         'key_factors', 'pros', 'cons', 'risks', 'alternatives'

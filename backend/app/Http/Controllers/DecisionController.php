@@ -56,6 +56,7 @@ class DecisionController extends Controller
      */
     public function store(StoreDecisionRequest $request)
     {
+        \Log::info('Incoming Request to /api/decision', $request->all());
         $validated = $request->validated();
         $query = $this->sanitizeInput($validated['query']);
         $domain = $validated['domain'] ?? $this->decisionService->classifyDomain($query);
@@ -80,11 +81,17 @@ class DecisionController extends Controller
 
         // --- Persistent Storage (Transaction) ---
         return DB::transaction(function () use ($request, $query, $domain, $cacheKey) {
-            $decision = $request->user()->decisions()->create([
-                'domain' => $domain,
-                'query'  => $query,
-                'status' => 'pending',
-            ]);
+            try {
+                $decision = $request->user()->decisions()->create([
+                    'domain' => $domain,
+                    'query'  => $query,
+                    'status' => 'pending',
+                ]);
+                \Log::info('Database insert success: Decision created', ['decision_id' => $decision->id]);
+            } catch (\Exception $e) {
+                \Log::error('Database insert failure: Decision failed', ['error' => $e->getMessage()]);
+                throw $e;
+            }
 
             AuditLog::create([
                 'user_id' => $request->user()->id,
