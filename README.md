@@ -114,32 +114,40 @@ Connect via `EventSource` to receive live processing updates.
 
 ---
 
-## 🔍 Advanced Features
+## 🧪 Quality Assurance
 
-### 🧠 Memory Retrieval System
-The engine automatically retrieves your last 5 historical "memories" (summaries of past decisions) to provide cohesive and personalized advice for your new queries.
+We maintain a comprehensive test suite to ensure the stability and reliability of the AI engine.
 
-### 📊 Audit & Request Logging
-A robust logging system tracks every API request's path, status, and latency. Significant actions (key additions, decision completions) are stored in the `audit_logs` table for security monitoring.
-
-### 🛡 Security Enforcement
-- **Key Enclosure**: Private API keys never leave the server.
-- **Prompt Sanitization**: All inputs are stripped of HTML and control characters to prevent prompt injection.
-- **Throttling**: 10 AI requests/min per user.
+### 🔬 Running Tests
+```bash
+php artisan test
+```
+**Test Coverage:**
+- **Feature Tests**: Authentication, API Key Management, Synchronous/Asynchronous Decisions.
+- **Unit Tests**: Encryption, Prompt Building, Response Parsing, and Model Relationships.
+- **Total**: 64 tests, 132 assertions (100% Pass).
 
 ---
 
-## 🛠 Maintenance
+## 🔍 Monitoring & Diagnostics
 
-### ⚡ Optimization Commands
+### 📊 Audit Logging
+Significant system actions (e.g., API key validation, decision completion) are recorded in the `audit_logs` table.
+
+### 🩺 Data Integrity Check
+Run the custom diagnostic command to verify the current state of the database:
 ```bash
-php artisan optimize
-php artisan config:cache
-php artisan route:cache
+php artisan tinker backend/check_db.php
 ```
 
-### 👷 Background Processing
-Start the queue worker to handle asynchronous AI calls:
-```bash
-php artisan queue:work redis
-```
+---
+
+## 🛡 License
+
+**Proprietary License**
+
+Copyright (c) 2026 Moumi7303. All rights reserved.
+
+No part of this software may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the copyright holder.
+
+For permissions, please contact the repository owner at https://github.com/Moumi7303.
