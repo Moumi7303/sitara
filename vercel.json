@@ -7,7 +7,6 @@
     "backend": {
       "entrypoint": "backend",
       "routePrefix": "/_/backend",
-      "framework": "laravel",
       "installCommand": "composer install",
       "buildCommand": "php artisan optimize"
     }
