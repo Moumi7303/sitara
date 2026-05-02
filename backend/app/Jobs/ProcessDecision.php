@@ -52,7 +52,8 @@ class ProcessDecision implements ShouldQueue
             AuditLog::create([
                 'user_id' => $this->decision->user_id,
                 'action' => 'decision_queued_completed',
-                'details' => [
+                'status' => 'success',
+                'metadata' => [
                     'decision_id' => $this->decision->id,
                     'domain' => $this->decision->domain,
                     'attempt' => $this->attempts(),
@@ -81,7 +82,8 @@ class ProcessDecision implements ShouldQueue
         AuditLog::create([
             'user_id' => $this->decision->user_id,
             'action' => 'decision_queued_failed',
-            'details' => [
+            'status' => 'failure',
+            'metadata' => [
                 'decision_id' => $this->decision->id,
                 'error' => $exception->getMessage(),
             ],

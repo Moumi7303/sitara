@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ApiKey;
-use App\Models\AuditLog;
+use App\Services\AuditService;
 use App\Services\EncryptionService;
 use App\Services\GroqService;
 use App\Services\CacheService;
@@ -26,15 +26,25 @@ class APIKeyController extends Controller
     }
 
     /**
-     * GET /api/api-key — list user's API keys
+     * GET /api/api-key — list API keys
+     * Admin sees all; user/viewer sees own only.
      */
     public function index(Request $request)
     {
-        $keys = $request->user()
-            ->apiKeys()
-            ->select(['id', 'provider', 'status', 'created_at', 'last_used_at'])
-            ->latest()
-            ->get();
+        $this->authorize('viewAny', ApiKey::class);
+
+        $user = $request->user();
+
+        if ($user->isAdmin()) {
+            $keys = ApiKey::select(['id', 'user_id', 'provider', 'status', 'created_at', 'last_used_at'])
+                ->latest()
+                ->get();
+        } else {
+            $keys = $user->apiKeys()
+                ->select(['id', 'provider', 'status', 'created_at', 'last_used_at'])
+                ->latest()
+                ->get();
+        }
 
         return response()->json($keys);
     }
@@ -44,6 +54,8 @@ class APIKeyController extends Controller
      */
     public function store(StoreApiKeyRequest $request)
     {
+        $this->authorize('create', ApiKey::class);
+
         \Log::info('Incoming Request to /api/api-key', $request->all());
         $validated = $request->validated();
         $plainKey = trim($validated['api_key']);
@@ -51,12 +63,12 @@ class APIKeyController extends Controller
 
         // Validate the key against Groq before storing
         if (!$this->groqService->validateApiKey($plainKey)) {
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'api_key_validation',
-                'status' => 'failure',
-                'metadata' => ['provider' => $provider, 'reason' => 'invalid_key']
-            ]);
+            AuditService::log(
+                $request->user()->id,
+                'api_key_validation',
+                'failure',
+                ['provider' => $provider, 'reason' => 'invalid_key']
+            );
 
             return response()->json([
                 'error' => 'The provided API key is invalid or could not be verified with Groq.',
@@ -85,12 +97,12 @@ class APIKeyController extends Controller
                 throw $e;
             }
 
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'api_key_added',
-                'status' => 'success',
-                'metadata' => ['provider' => $apiKey->provider, 'api_key_id' => $apiKey->id]
-            ]);
+            AuditService::log(
+                $request->user()->id,
+                'api_key_added',
+                'success',
+                ['provider' => $apiKey->provider, 'api_key_id' => $apiKey->id]
+            );
 
             return response()->json([
                 'message' => 'API key validated and stored securely.',
@@ -105,9 +117,7 @@ class APIKeyController extends Controller
      */
     public function update(Request $request, ApiKey $apiKey)
     {
-        if ($apiKey->user_id !== $request->user()->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
+        $this->authorize('update', $apiKey);
 
         $validated = $request->validate([
             'status' => 'required|boolean',
@@ -115,12 +125,12 @@ class APIKeyController extends Controller
 
         $apiKey->update(['status' => $validated['status']]);
 
-        AuditLog::create([
-            'user_id' => $request->user()->id,
-            'action' => 'api_key_toggle',
-            'status' => 'success',
-            'metadata' => ['api_key_id' => $apiKey->id, 'new_status' => $validated['status']]
-        ]);
+        AuditService::log(
+            $request->user()->id,
+            'api_key_toggle',
+            'success',
+            ['api_key_id' => $apiKey->id, 'new_status' => $validated['status']]
+        );
 
         return response()->json(['message' => 'API key updated.', 'status' => $apiKey->status]);
     }
@@ -130,21 +140,19 @@ class APIKeyController extends Controller
      */
     public function destroy(Request $request, ApiKey $apiKey)
     {
-        if ($apiKey->user_id !== $request->user()->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
+        $this->authorize('delete', $apiKey);
 
         $apiKey->delete();
 
         // Flush cached decisions — key changes affect AI logic
-        $this->cache->invalidateUser($request->user()->id);
+        $this->cache->invalidateUser($apiKey->user_id);
 
-        AuditLog::create([
-            'user_id' => $request->user()->id,
-            'action' => 'api_key_deleted',
-            'status' => 'success',
-            'metadata' => ['provider' => $apiKey->provider]
-        ]);
+        AuditService::log(
+            $request->user()->id,
+            'api_key_deleted',
+            'success',
+            ['provider' => $apiKey->provider, 'api_key_id' => $apiKey->id]
+        );
 
         return response()->json(['message' => 'API key deleted.'], 200);
     }

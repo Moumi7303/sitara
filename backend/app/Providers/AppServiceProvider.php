@@ -6,6 +6,14 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Gate;
+
+use App\Models\Decision;
+use App\Models\ApiKey;
+use App\Models\Memory;
+use App\Policies\DecisionPolicy;
+use App\Policies\ApiKeyPolicy;
+use App\Policies\MemoryPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ─── Rate Limiters ───────────────────────────────────────────────────────
+
         // General API: 60 requests/min per user or IP
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
@@ -34,5 +44,11 @@ class AppServiceProvider extends ServiceProvider
                     'error' => 'Too many decision requests. Please wait before making another request.',
                 ], 429));
         });
+
+        // ─── Authorization Policies ──────────────────────────────────────────────
+
+        Gate::policy(Decision::class, DecisionPolicy::class);
+        Gate::policy(ApiKey::class, ApiKeyPolicy::class);
+        Gate::policy(Memory::class, MemoryPolicy::class);
     }
 }

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\APIKeyController;
 use App\Http\Controllers\DecisionController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\AdminUserController;
 
 // ─── Public Auth Routes ──────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // User Profile
     Route::get('/user/profile', [AuthenticationController::class, 'profile']);
+    Route::put('/user/profile', [AuthenticationController::class, 'updateProfile']);
 
     // API Keys Management
     Route::get('/api-key', [APIKeyController::class, 'index']);
@@ -31,7 +34,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Decisions History & Management
     Route::get('/decisions', [DecisionController::class, 'index']);
     Route::get('/decisions/{decision}', [DecisionController::class, 'show']);
-    
+    Route::put('/decisions/{decision}', [DecisionController::class, 'update']);
+    Route::delete('/decisions/{decision}', [DecisionController::class, 'destroy']);
+
     // AI-processed decision
     // Supports ?async=true to dispatch to queue
     Route::post('/decision', [DecisionController::class, 'store'])
@@ -47,7 +52,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     // Status polling for async (queued) decisions
     Route::get('/decisions/{decision}/status', function (Request $request, \App\Models\Decision $decision) {
-        if ($decision->user_id !== $request->user()->id) {
+        if (!$request->user()->isAdmin() && $decision->user_id !== $request->user()->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         return response()->json([
@@ -55,5 +60,22 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             'status'      => $decision->status,
             'output'      => $decision->status === 'completed' ? $decision->load('output')->output : null,
         ]);
+    });
+
+    // Audit Logs (user sees own)
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+    // ─── Admin-Only Routes ───────────────────────────────────────────────────
+
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // User Management
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::get('/users/{user}', [AdminUserController::class, 'show']);
+        Route::put('/users/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+
+        // Audit Logs (admin sees all, can delete)
+        Route::get('/audit-logs', [AuditLogController::class, 'adminIndex']);
+        Route::delete('/audit-logs/{log}', [AuditLogController::class, 'destroy']);
     });
 });

@@ -13,6 +13,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@21st-sdk/agent": "^0.0.16",
+    "@21st-sdk/nextjs": "^0.0.11",
+    "@21st-sdk/node": "^0.0.10",
+    "@21st-sdk/react": "^0.1.4",
+    "@ai-sdk/react": "^3.0.170",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -42,6 +47,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@tanstack/react-query": "^5.83.0",
+    "ai": "^6.0.168",
     "axios": "^1.14.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -89,5 +95,18 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "A production-ready Laravel 11 REST API that acts as an intelligent AI proxy, using Groq LLMs to provide structured decision analysis. Developed with SSE streaming, encrypted API key management, Redis caching, and historical context retrieval.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moumi7303/sitara.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Moumi7303/sitara/issues"
+  },
+  "homepage": "https://github.com/Moumi7303/sitara#readme"
 }

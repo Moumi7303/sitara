@@ -12,8 +12,8 @@ class GroqService
     protected EncryptionService $encryptionService;
     protected ResponseParserService $responseParser;
 
-    // Default model to use (fast, large context, high quality)
-    const DEFAULT_MODEL = 'mixtral-8x7b-32768';
+    // Default model to use (stable, high quality)
+    const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 
     // Max number of retries if JSON response is invalid
     const MAX_RETRIES = 2;
@@ -41,8 +41,8 @@ class GroqService
             return $this->encryptionService->decryptKey($apiKey->encrypted_key);
         }
 
-        // Fallback to master key from env
-        $masterKey = env('GROQ_API_KEY');
+        // Fallback to master key from config (works with config:cache)
+        $masterKey = config('services.groq.api_key');
         if (!empty($masterKey)) {
             return $masterKey;
         }
@@ -56,9 +56,14 @@ class GroqService
     public function validateApiKey(string $plainKey): bool
     {
         try {
-            $response = Http::withToken($plainKey)
-                ->timeout(10)
-                ->post("{$this->baseUrl}/chat/completions", [
+            $request = Http::withToken($plainKey)
+                ->timeout(10);
+
+            if (config('app.debug')) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request->post("{$this->baseUrl}/chat/completions", [
                     'model' => 'gemma2-9b-it',
                     'messages' => [['role' => 'user', 'content' => 'Hi']],
                     'max_tokens' => 5,
@@ -83,9 +88,14 @@ class GroqService
             $attempt++;
 
             try {
-                $response = Http::withToken($apiKey)
-                    ->timeout(60)
-                    ->post("{$this->baseUrl}/chat/completions", [
+                $request = Http::withToken($apiKey)
+                    ->timeout(60);
+
+                if (config('app.debug')) {
+                    $request = $request->withoutVerifying();
+                }
+
+                $response = $request->post("{$this->baseUrl}/chat/completions", [
                         'model' => $model,
                         'messages' => $messages,
                         'temperature' => 0.3,
@@ -147,12 +157,17 @@ class GroqService
     public function streamRequest(array $messages, string $apiKey, string $model = self::DEFAULT_MODEL): \Generator
     {
         try {
-            $response = Http::withToken($apiKey)
+            $request = Http::withToken($apiKey)
                 ->timeout(120)
                 ->withOptions([
                     'stream' => true,
-                ])
-                ->post("{$this->baseUrl}/chat/completions", [
+                ]);
+
+            if (config('app.debug')) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request->post("{$this->baseUrl}/chat/completions", [
                     'model' => $model,
                     'messages' => $messages,
                     'temperature' => 0.3,

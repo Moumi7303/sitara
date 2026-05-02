@@ -50,10 +50,11 @@ class ApiRequestLogger
                 AuditLog::create([
                     'user_id' => $userId,
                     'action' => 'api_request',
-                    'details' => [
+                    'status' => $statusCode >= 400 ? 'failure' : 'success',
+                    'metadata' => [
                         'method' => $request->method(),
                         'path' => $request->path(),
-                        'status' => $statusCode,
+                        'http_status' => $statusCode,
                         'duration_ms' => $duration,
                     ],
                 ]);

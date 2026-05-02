@@ -17,4 +17,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Dynamic import to avoid circular dependency issues
+      const { useAuthStore } = require('../stores/authStore');
+      useAuthStore.getState().logout();
+      // Redirect to login if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

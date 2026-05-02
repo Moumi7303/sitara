@@ -1,0 +1,153 @@
+{
+  "task": "debug_and_fix_history_storage_issue",
+  "project": "sitara_ai_decision_engine_backend",
+  "objective": "Ensure all user decision histories are properly stored in database and retrievable",
+  "strict_mode": true,
+  "rules": [
+    "DO NOT skip debugging steps",
+    "IDENTIFY root cause before fixing",
+    "ENSURE data is stored before API response",
+    "USE Eloquent ORM only",
+    "DO NOT break existing logic"
+  ],
+  "possible_issues": [
+    "Controller not saving data",
+    "Model missing fillable fields",
+    "Database table mismatch",
+    "Migration not executed",
+    "API request not reaching backend",
+    "Validation blocking insert",
+    "Transaction rollback happening silently"
+  ],
+  "steps": [
+    {
+      "step": "verify_database_table",
+      "actions": [
+        "Check if 'decisions' table exists",
+        "Check if 'decision_outputs' table exists",
+        "Verify columns: user_id, query, domain, confidence_score",
+        "If missing → run migrations"
+      ]
+    },
+    {
+      "step": "check_model_configuration",
+      "actions": [
+        "Open Decision model",
+        "Ensure fillable includes: user_id, query, domain, confidence_score",
+        "Ensure timestamps enabled"
+      ],
+      "expected_code": [
+        "protected $fillable = ['user_id', 'query', 'domain', 'confidence_score'];"
+      ]
+    },
+    {
+      "step": "check_controller_storage",
+      "actions": [
+        "Ensure Decision::create() is called",
+        "Ensure data is saved BEFORE AI response",
+        "Add logging to confirm execution"
+      ],
+      "expected_code": [
+        "\\Log::info('Saving decision...', $request->all());",
+        "$decision = Decision::create([",
+        "  'user_id' => auth()->id(),",
+        "  'query' => $request->query,",
+        "  'domain' => $request->domain,",
+        "  'confidence_score' => 0",
+        "]);"
+      ]
+    },
+    {
+      "step": "check_decision_output_storage",
+      "actions": [
+        "Ensure AI response is saved in decision_outputs table",
+        "Link using decision_id",
+        "Store JSON fields properly"
+      ]
+    },
+    {
+      "step": "validate_request",
+      "actions": [
+        "Ensure request validation allows query field",
+        "Check min length requirement",
+        "Ensure domain field exists"
+      ]
+    },
+    {
+      "step": "check_api_route",
+      "actions": [
+        "Verify POST /api/decision route exists",
+        "Ensure route uses correct controller",
+        "Ensure auth middleware applied"
+      ]
+    },
+    {
+      "step": "frontend_request_check",
+      "actions": [
+        "Ensure frontend sends request to correct endpoint",
+        "Ensure query and domain fields are included",
+        "Check network tab for request success"
+      ]
+    },
+    {
+      "step": "transaction_handling",
+      "actions": [
+        "Check if DB transaction is used",
+        "Ensure commit happens",
+        "Log rollback if failure"
+      ]
+    },
+    {
+      "step": "add_debug_logging",
+      "actions": [
+        "Log incoming request",
+        "Log before DB insert",
+        "Log after DB insert",
+        "Log errors"
+      ]
+    },
+    {
+      "step": "test_storage",
+      "actions": [
+        "Submit test decision from frontend",
+        "Check database manually",
+        "Verify record appears in decisions table"
+      ]
+    }
+  ],
+  "auto_fix_rules": [
+    {
+      "issue": "missing_fillable",
+      "fix": "add required fields to model"
+    },
+    {
+      "issue": "no_insert_call",
+      "fix": "add Decision::create() in controller"
+    },
+    {
+      "issue": "missing_table",
+      "fix": "run php artisan migrate"
+    },
+    {
+      "issue": "request_data_missing",
+      "fix": "update frontend payload"
+    }
+  ],
+  "debug_checks": [
+    "Check if data appears in decisions table",
+    "Check if decision_outputs linked correctly",
+    "Check if user_id stored correctly",
+    "Check logs for errors",
+    "Check API response after insert"
+  ],
+  "constraints": [
+    "Do not remove existing data",
+    "Do not break AI response flow",
+    "Ensure database consistency",
+    "Ensure secure user-based storage"
+  ],
+  "output": {
+    "result": "History storage fully fixed",
+    "verification": "All decisions persist and appear in history page"
+  }
+}

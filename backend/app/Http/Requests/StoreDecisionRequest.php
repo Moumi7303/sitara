@@ -22,8 +22,8 @@ class StoreDecisionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'domain' => 'nullable|string|in:career,tech,business,personal',
-            'query'  => 'required|string|min:10|max:5000',
+            'domain' => 'nullable|string|max:50',
+            'query'  => 'required|string|min:3|max:5000',
             'async'  => 'nullable|boolean',
         ];
     }
@@ -35,8 +35,7 @@ class StoreDecisionRequest extends FormRequest
     {
         return [
             'query.required' => 'A decision query is required.',
-            'query.min'      => 'Please describe your decision in at least 10 characters.',
-            'domain.in'      => 'Selected domain must be one of: career, tech, business, or personal.',
+            'query.min'      => 'Please describe your decision in at least 3 characters.',
         ];
     }
 }

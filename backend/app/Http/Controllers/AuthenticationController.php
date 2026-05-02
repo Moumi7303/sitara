@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 use App\Http\Requests\RegisterRequest;
-use App\Models\AuditLog;
+use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 
 class AuthenticationController extends Controller
@@ -20,13 +20,11 @@ class AuthenticationController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
+                'role' => User::ROLE_USER,
             ]);
 
-            AuditLog::create([
-                'user_id' => $user->id,
-                'action' => 'user_registration',
-                'status' => 'success',
-                'metadata' => ['email' => $user->email]
+            AuditService::log($user->id, 'user_registration', 'success', [
+                'email' => $user->email,
             ]);
 
             return response()->json([
@@ -47,11 +45,9 @@ class AuthenticationController extends Controller
         $user = User::where('email', $validated['email'])->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
-            AuditLog::create([
-                'user_id' => $user?->id,
-                'action' => 'user_login',
-                'status' => 'failure',
-                'metadata' => ['email' => $validated['email'], 'reason' => 'invalid_credentials']
+            AuditService::log($user?->id, 'user_login', 'failure', [
+                'email' => $validated['email'],
+                'reason' => 'invalid_credentials',
             ]);
 
             throw ValidationException::withMessages([
@@ -59,11 +55,8 @@ class AuthenticationController extends Controller
             ]);
         }
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'action' => 'user_login',
-            'status' => 'success',
-            'metadata' => ['email' => $user->email]
+        AuditService::log($user->id, 'user_login', 'success', [
+            'email' => $user->email,
         ]);
 
         return response()->json([
@@ -75,5 +68,29 @@ class AuthenticationController extends Controller
     public function profile(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        // Viewers cannot update their profile
+        if ($user->isViewer()) {
+            return response()->json(['error' => 'Viewers cannot modify profile data.'], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update($validated);
+
+        AuditService::log($user->id, 'user_profile_update', 'success', [
+            'email' => $user->email,
+            'name' => $user->name,
+        ]);
+
+        return response()->json($user);
     }
 }

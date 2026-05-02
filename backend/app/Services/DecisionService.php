@@ -44,7 +44,7 @@ class DecisionService
             $memories = $decision->user->memories()
                 ->latest()
                 ->limit(5)
-                ->pluck('context')
+                ->pluck('content')
                 ->toArray();
 
             // 3. Build structured prompt with memories
@@ -76,14 +76,15 @@ class DecisionService
 
             // 6. Store new memory for future context
             $decision->user->memories()->create([
-                'context' => "On " . now()->toFormattedDateString() . ", for a {$decision->domain} query: '{$decision->getAttribute('query')}', the recommendation was: {$parsed['recommendation']}"
+                'content' => "On " . now()->toFormattedDateString() . ", for a {$decision->domain} query: '{$decision->getAttribute('query')}', the recommendation was: {$parsed['recommendation']}"
             ]);
 
             // 7. Log the action
             AuditLog::create([
                 'user_id' => $decision->user_id,
                 'action' => 'decision_completed',
-                'details' => [
+                'status' => 'success',
+                'metadata' => [
                     'decision_id' => $decision->id,
                     'domain' => $decision->domain,
                     'confidence_score' => $confidenceScore,
@@ -135,7 +136,7 @@ class DecisionService
         $memories = $decision->user->memories()
             ->latest()
             ->limit(5)
-            ->pluck('context')
+            ->pluck('content')
             ->toArray();
 
         $messages = $this->promptBuilder->buildPrompt(

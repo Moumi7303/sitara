@@ -6,21 +6,32 @@ interface ConfidenceBarProps {
 }
 
 const ConfidenceBar = ({ score, label }: ConfidenceBarProps) => {
-  const color = score >= 75 ? 'bg-[var(--accent)]' : score >= 50 ? 'bg-[var(--card)]' : 'bg-[var(--text)]';
+  const getGradient = (s: number) => {
+    if (s >= 75) return 'from-green-400 to-emerald-500';
+    if (s >= 50) return 'from-amber-400 to-orange-500';
+    return 'from-red-400 to-rose-500';
+  };
 
   return (
     <div className="space-y-1.5">
-      {label && <span className="text-xs text-muted-foreground">{label}</span>}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${score}%` }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            className={`h-full rounded-full ${color}`}
-          />
+      {label && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[var(--text-secondary)]">{label}</span>
+          <span className="text-xs font-mono font-semibold">{score}%</span>
         </div>
-        <span className="text-sm font-mono font-semibold w-10 text-right">{score}%</span>
+      )}
+      <div className="relative h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className={`h-full rounded-full bg-gradient-to-r ${getGradient(score)} relative overflow-hidden`}
+        >
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 animate-shimmer">
+            <div className="h-full w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          </div>
+        </motion.div>
       </div>
     </div>
   );

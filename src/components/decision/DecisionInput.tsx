@@ -1,109 +1,120 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Send, Loader2 } from 'lucide-react';
-import { useDecisionStore, type DecisionResult } from '@/stores/decisionStore';
+import { useDecisionStore, mapBackendDecision, type DecisionResult } from '@/stores/decisionStore';
 import { motion } from 'framer-motion';
+import api from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
-const domains = ['Business', 'Technology', 'Finance', 'Career', 'Health', 'Education', 'General'];
-
-const mockAnalyze = (query: string, domain: string): DecisionResult => ({
-  id: Date.now().toString(),
-  query,
-  recommendation: `Based on comprehensive analysis, the recommended course of action is to proceed with a measured approach. The key factors favor moving forward with appropriate risk mitigation strategies in place.`,
-  confidenceScore: 78,
-  factors: [
-    { name: 'Market Timing', weight: 0.85, impact: 'positive' },
-    { name: 'Resource Availability', weight: 0.72, impact: 'positive' },
-    { name: 'Competition Risk', weight: 0.45, impact: 'negative' },
-    { name: 'Technical Feasibility', weight: 0.91, impact: 'positive' },
-    { name: 'Regulatory Environment', weight: 0.6, impact: 'neutral' },
-  ],
-  pros: [
-    'Strong market demand supports the decision',
-    'Technical infrastructure is already in place',
-    'First-mover advantage in this segment',
-    'Aligns with long-term strategic goals',
-  ],
-  cons: [
-    'Significant upfront investment required',
-    'Competitive landscape is intensifying',
-    'Regulatory uncertainty in some regions',
-  ],
-  risks: [
-    { level: 'high', description: 'Market volatility could impact ROI within the first 12 months' },
-    { level: 'medium', description: 'Talent acquisition challenges may slow execution' },
-    { level: 'low', description: 'Minor operational disruptions during transition' },
-  ],
-  alternatives: [
-    { title: 'Phased Rollout', description: 'Start with a pilot program before full commitment', score: 82 },
-    { title: 'Strategic Partnership', description: 'Partner with an established player to reduce risk', score: 75 },
-    { title: 'Wait & Monitor', description: 'Delay decision and gather more market data', score: 58 },
-  ],
-  domain,
-  createdAt: new Date().toISOString(),
-});
+const domains = ['Career', 'Tech', 'Business', 'Personal'];
 
 const DecisionInput = () => {
   const [query, setQuery] = useState('');
   const [domain, setDomain] = useState('General');
   const { isStreaming, setStreaming, setStreamedText, appendStreamedText, setCurrentDecision, addToHistory } = useDecisionStore();
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     if (!query.trim() || isStreaming) return;
-
+    
     setStreaming(true);
     setStreamedText('');
     setCurrentDecision(null);
 
-    const result = mockAnalyze(query, domain);
+    try {
+      const response = await api.post('/decision', {
+        query,
+        domain: domain.toLowerCase(),
+      });
 
-    // Simulate streaming
-    const text = result.recommendation;
-    for (let i = 0; i < text.length; i++) {
-      await new Promise((r) => setTimeout(r, 15));
-      appendStreamedText(text[i]);
+      const data = response.data.decision;
+
+      // Use shared mapping utility from the store
+      const result = mapBackendDecision(data);
+
+      if (!result) {
+        throw new Error('Decision processing failed — no output received.');
+      }
+
+      // Simulate streaming for the recommendation text to keep the "alive" feel
+      const text = result.recommendation;
+      for (let i = 0; i < text.length; i++) {
+        await new Promise((r) => setTimeout(r, 10));
+        appendStreamedText(text[i]);
+      }
+
+      setCurrentDecision(result);
+      addToHistory(result);
+      setQuery('');
+    } catch (error: any) {
+      console.error("Analysis failed", error);
+      toast({
+        title: "Analysis Failed",
+        description: error.response?.data?.error || error.response?.data?.message || "Ensure you have an API key configured in Settings.",
+        variant: "destructive"
+      });
+    } finally {
+      setStreaming(false);
     }
-
-    setCurrentDecision(result);
-    addToHistory(result);
-    setStreaming(false);
   };
 
+  const charPercent = Math.min((query.length / 2000) * 100, 100);
+
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <div className="rounded-xl border border-border bg-[var(--card)] p-4 space-y-3">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="glass-card rounded-2xl p-5 space-y-4 focus-within:border-[var(--accent)]/30 transition-colors">
         <Textarea
           placeholder="Describe your decision... e.g., 'Should I expand my SaaS product to the European market?'"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="min-h-[100px] resize-none border-0 bg-transparent text-base focus-visible:ring-0 p-0"
+          className="min-h-[100px] resize-none border-0 bg-transparent text-base focus-visible:ring-0 p-0 placeholder:text-[var(--text-secondary)]/50"
           maxLength={2000}
         />
-        <div className="flex items-center justify-between">
-          <Select value={domain} onValueChange={setDomain}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {domains.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">{query.length}/2000</span>
-            <Button
-              onClick={handleSubmit}
-              disabled={!query.trim() || isStreaming}
-              className="gradient-primary text-primary-foreground gap-2"
+        {/* Domain pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {domains.map((d) => (
+            <button
+              key={d}
+              onClick={() => setDomain(d)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                domain === d
+                  ? 'bg-[var(--accent)] text-white shadow-sm'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]'
+              }`}
             >
-              {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Analyze
-            </Button>
+              {d}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          {/* Circular char counter */}
+          <div className="flex items-center gap-2">
+            <div className="relative h-6 w-6">
+              <svg className="h-6 w-6 -rotate-90" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border)" strokeWidth="2" />
+                <circle
+                  cx="12" cy="12" r="10" fill="none"
+                  stroke={charPercent > 90 ? 'var(--danger)' : 'var(--accent)'}
+                  strokeWidth="2"
+                  strokeDasharray={`${charPercent * 0.628} 62.8`}
+                  className="transition-all duration-300"
+                />
+              </svg>
+            </div>
+            <span className="text-xs text-[var(--text-secondary)]">{query.length}/2000</span>
           </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={query.trim().length < 3 || isStreaming}
+            className="gradient-primary text-white gap-2 rounded-xl shadow-sm hover:shadow-md transition-all h-10 px-5"
+          >
+            {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Analyze
+          </Button>
         </div>
       </div>
     </motion.div>
