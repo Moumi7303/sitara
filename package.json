@@ -1,8 +1,9 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "sitara-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "An intelligent AI proxy frontend built with React, Vite, and ShadcnUI, featuring SSE streaming and Groq LLM integration.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -96,15 +97,12 @@
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
   },
-  "description": "A production-ready Laravel 11 REST API that acts as an intelligent AI proxy, using Groq LLMs to provide structured decision analysis. Developed with SSE streaming, encrypted API key management, Redis caching, and historical context retrieval.",
-  "main": "eslint.config.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Moumi7303/sitara.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Moumi7303 & [Your Name]",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Moumi7303/sitara/issues"
   },
